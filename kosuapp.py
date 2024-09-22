@@ -62,10 +62,17 @@ race_data = {
 df_races = pd.DataFrame(race_data)
 df_races["Date"] = pd.to_datetime(df_races["Date"])
 
-# Helper function to check if any distance in a list is within the given range
-def is_within_distance_range(distances, min_dist, max_dist):
-    dist_list = [int(d[:-1]) for d in distances.split(', ')]
-    return any(min_dist <= d <= max_dist for d in dist_list)
+# Helper function to extract minimum and maximum distances
+def extract_min_max_distances(distance_series):
+    min_distances = []
+    max_distances = []
+    for distances in distance_series:
+        dist_list = [int(d[:-1]) for d in distances.split(', ')]
+        min_distances.append(min(dist_list))
+        max_distances.append(max(dist_list))
+    return min_distances, max_distances
+
+df_races["Min Distance"], df_races["Max Distance"] = extract_min_max_distances(df_races["Distances"])
 
 # Function to create clickable links in the dataframe
 def make_clickable(link):
@@ -114,7 +121,8 @@ if submit_button:
     filtered_df = df_races[
         (df_races["Race Type"].isin(selected_type) if selected_type else [True] * len(df_races)) & 
         (df_races["City"].isin(selected_city) if selected_city else [True] * len(df_races)) & 
-        df_races.apply(lambda x: is_within_distance_range(x["Distances"], min_distance, max_distance), axis=1) & 
+        (df_races["Min Distance"] >= min_distance) & 
+        (df_races["Max Distance"] <= max_distance) &
         (df_races["Date"] >= pd.to_datetime(start_date)) & 
         (df_races["Date"] <= pd.to_datetime(end_date))
     ]
